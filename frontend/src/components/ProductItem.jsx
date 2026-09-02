@@ -15,7 +15,7 @@ const ProductItem = ({ id, image, name, price }) => {
       <div className=" overflow-hidden">
         <img
           className="hover:scale-110 transition ease-in-out"
-          src={imageMap[image[0]]}
+          src={image[0]?.startsWith("http") ? image[0] : imageMap[image[0]]}
           alt={name}
         />
       </div>

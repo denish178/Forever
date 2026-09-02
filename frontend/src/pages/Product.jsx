@@ -36,7 +36,7 @@ const Product = () => {
             {productData.image.map((item, index) => (
               <img
                 onClick={() => setImage(item)}
-                src={imageMap[item]}
+                src={item?.startsWith("http") ? item : imageMap[item]}
                 key={index}
                 className="w-[24%] sm:w-full sm:mb-3 flex-shrink-0 cursor-pointer"
                 alt=""
@@ -46,7 +46,7 @@ const Product = () => {
           <div className="w-full sm:w-[80%]">
             <img
               className="w-full h-auto"
-              src={imageMap[image]}
+              src={image?.startsWith("http") ? image : imageMap[image]}
               alt={productData.name}
             />
           </div>
