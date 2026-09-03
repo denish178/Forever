@@ -15,12 +15,18 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 // Load env FIRST
 dotenv.config();
 
+if (process.env.NODE_ENV === "test") {
+  process.env.MONGO_URI = "";
+}
+
 // App Config
 const app = express();
 const port = process.env.PORT || 4000;
 
 // Connect services AFTER env is loaded
-connectDB();
+if (process.env.NODE_ENV !== "test") {
+  connectDB();
+}
 connectCloudinary();
 
 // Middlewares
@@ -43,7 +49,7 @@ app.get("/", (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
   app.listen(port, () => console.log("Server started on PORT : " + port));
 }
 

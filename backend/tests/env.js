@@ -1,0 +1,9 @@
+process.env.NODE_ENV = "test";
+process.env.JWT_SECRET = "test-jwt-secret-key";
+process.env.ADMIN_EMAIL = "admin@test.com";
+process.env.ADMIN_PASSWORD = "adminpass123";
+process.env.CLOUDINARY_NAME = "test-cloud";
+process.env.CLOUDINARY_API_KEY = "test-key";
+process.env.CLOUDINARY_SECRET_KEY = "test-secret";
+process.env.MONGO_URI = "";
+process.env.MONGOMS_VERSION = "6.0.9";
