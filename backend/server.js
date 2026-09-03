@@ -9,6 +9,7 @@ import cartRouter from "./routes/cartRoute.js";
 import wishlistRouter from "./routes/wishlistRoute.js";
 import reviewRouter from "./routes/reviewRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import dashboardRouter from "./routes/dashboardRoute.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 
 // Load env FIRST
@@ -33,6 +34,7 @@ app.use("/api/cart", cartRouter);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/review", reviewRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 app.get("/", (req, res) => {
   res.send("API Working");
