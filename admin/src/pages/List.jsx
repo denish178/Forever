@@ -10,6 +10,7 @@ const List = ({ token }) => {
   const location = useLocation();
 
   const [list, setList] = useState([]);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchList = async () => {
     try {
@@ -25,8 +26,15 @@ const List = ({ token }) => {
     }
   };
 
-  const removeProduct = async (id) => {
+  const removeProduct = async (id, name) => {
+    const confirmed = window.confirm(
+      `Delete "${name}"?\n\nThis action cannot be undone.`,
+    );
+    if (!confirmed) return;
+
     try {
+      setDeletingId(id);
+
       const response = await axios.post(
         backendUrl + "/api/product/remove",
         { id },
@@ -42,6 +50,8 @@ const List = ({ token }) => {
     } catch (error) {
       console.log(error);
       toast.error(error.message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -91,12 +101,13 @@ const List = ({ token }) => {
             >
               Edit
             </button>
-            <p
-              onClick={() => removeProduct(item._id)}
-              className="text-right md:text-center cursor-pointer text-lg"
+            <button
+              onClick={() => removeProduct(item._id, item.name)}
+              disabled={deletingId === item._id}
+              className="text-right md:text-center cursor-pointer text-lg text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              X
-            </p>
+              {deletingId === item._id ? "..." : "X"}
+            </button>
           </div>
         ))}
       </div>
