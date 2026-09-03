@@ -6,6 +6,11 @@ const addToWishlist = async (req, res) => {
     const { userId, itemId } = req.body;
 
     const userData = await userModel.findById(userId);
+
+    if (!userData) {
+      return sendError(res, "User not found", 404);
+    }
+
     const wishlistData = { ...(userData.wishlistData || {}), [itemId]: true };
 
     await userModel.findByIdAndUpdate(userId, { wishlistData });
@@ -22,6 +27,11 @@ const removeFromWishlist = async (req, res) => {
     const { userId, itemId } = req.body;
 
     const userData = await userModel.findById(userId);
+
+    if (!userData) {
+      return sendError(res, "User not found", 404);
+    }
+
     const wishlistData = { ...(userData.wishlistData || {}) };
     delete wishlistData[itemId];
 
@@ -39,6 +49,10 @@ const getUserWishlist = async (req, res) => {
     const { userId } = req.body;
 
     const userData = await userModel.findById(userId);
+
+    if (!userData) {
+      return sendError(res, "User not found", 404);
+    }
 
     return sendSuccess(res, { wishlistData: userData.wishlistData || {} });
   } catch (error) {
