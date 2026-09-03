@@ -210,11 +210,56 @@ const resetPassword = async (req, res) => {
     }
 };
 
+// Route for update user profile
+const updateUserProfile = async (req, res) => {
+    try {
+        const { userId, name, email } = req.body;
+
+        if (!name?.trim()) {
+            return sendError(res, "Name is required", 400);
+        }
+
+        if (!email || !validator.isEmail(email)) {
+            return sendError(res, "Please enter a valid email", 400);
+        }
+
+        const user = await userModel.findById(userId);
+
+        if (!user) {
+            return sendError(res, "User not found", 404);
+        }
+
+        const emailTaken = await userModel.findOne({
+            email,
+            _id: { $ne: userId },
+        });
+
+        if (emailTaken) {
+            return sendError(res, "Email is already in use", 400);
+        }
+
+        user.name = name.trim();
+        user.email = email.trim().toLowerCase();
+        await user.save();
+
+        const updatedUser = await userModel.findById(userId).select("-password");
+
+        return sendSuccess(res, {
+            message: "Profile updated successfully",
+            user: updatedUser,
+        });
+    } catch (error) {
+        console.log(error);
+        return sendError(res, error.message, 500);
+    }
+};
+
 export {
     loginUser,
     registerUser,
     adminLogin,
     getUserProfile,
+    updateUserProfile,
     forgotPassword,
     resetPassword,
 }

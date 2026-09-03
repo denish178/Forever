@@ -18,8 +18,24 @@ const connectDB = async () => {
     console.log("MongoDB Connected");
   } catch (error) {
     console.error("MongoDB connection failed:", error.message);
+    if (process.env.NODE_ENV === "test") {
+      throw error;
+    }
     process.exit(1);
   }
 };
 
+const disconnectDB = async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+  }
+
+  if (mongoServer) {
+    await mongoServer.stop();
+    mongoServer = null;
+  }
+};
+
 export default connectDB;
+export { disconnectDB };
