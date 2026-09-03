@@ -13,7 +13,7 @@ const getUserIdFromToken = (token) => {
   }
 };
 
-const ProductReviews = ({ productId, onReviewSummaryChange }) => {
+const ProductReviews = ({ productId, productDetails, onReviewSummaryChange }) => {
   const { backendUrl, token, navigate } = useContext(ShopContext);
   const currentUserId = token ? getUserIdFromToken(token) : null;
 
@@ -236,18 +236,44 @@ const ProductReviews = ({ productId, onReviewSummaryChange }) => {
 
       {activeTab === "description" ? (
         <div className="flex flex-col gap-4 border px-6 py-6 text-sm text-gray-500">
-          <p>
-            An e-commerce website is an online platform that facilitates the
-            buying and selling of products or services over the internet. It
-            serves as a virtual marketplace where businesses and individuals can
-            showcase their products, interact with customers, and conduct
-            transactions without the need for a physical presence.
-          </p>
-          <p>
-            E-commerce websites typically display products or services along
-            with detailed descriptions, images, prices, and any available
-            variations such as sizes and colors.
-          </p>
+          <p>{productDetails?.description}</p>
+          {(productDetails?.material ||
+            productDetails?.fit ||
+            productDetails?.care) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-gray-600">
+              {productDetails.material && (
+                <p>
+                  <span className="text-gray-400">Material: </span>
+                  {productDetails.material}
+                </p>
+              )}
+              {productDetails.fit && (
+                <p>
+                  <span className="text-gray-400">Fit: </span>
+                  {productDetails.fit}
+                </p>
+              )}
+              {productDetails.care && (
+                <p className="sm:col-span-2">
+                  <span className="text-gray-400">Care: </span>
+                  {productDetails.care}
+                </p>
+              )}
+            </div>
+          )}
+          {productDetails?.highlights?.length > 0 && (
+            <ul className="list-disc pl-5 flex flex-col gap-2 text-gray-600">
+              {productDetails.highlights.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          )}
+          {productDetails?.sizes?.length > 0 && (
+            <p>
+              <span className="text-gray-400">Available sizes: </span>
+              {productDetails.sizes.join(", ")}
+            </p>
+          )}
         </div>
       ) : (
         <div className="border px-6 py-6 text-sm text-gray-600">

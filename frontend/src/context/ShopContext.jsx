@@ -219,7 +219,10 @@ const ShopContextProvider = (props) => {
   const isInWishlist = (itemId) => Boolean(wishlistItems[itemId]);
 
   const getWishlistCount = () => {
-    return Object.keys(wishlistItems).length;
+    const validProductIds = new Set(products.map((product) => product._id));
+    return Object.keys(wishlistItems).filter(
+      (itemId) => wishlistItems[itemId] && validProductIds.has(itemId),
+    ).length;
   };
 
   useEffect(() => {

@@ -9,6 +9,10 @@ const productSchema = new mongoose.Schema({
     subCategory: { type: String, required: true },
     sizes: { type: Array, required: true },
     bestseller: { type: Boolean },
+    material: { type: String, default: "" },
+    fit: { type: String, default: "" },
+    care: { type: String, default: "" },
+    highlights: { type: Array, default: [] },
     date: { type: Number, required: true }
 })
 

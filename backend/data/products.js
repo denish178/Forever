@@ -1,3 +1,5 @@
+import productContent from "./productContent.js";
+
 const products = [
   {
     name: "Women Round Neck Cotton Top",
@@ -579,4 +581,11 @@ const products = [
   },
 ];
 
-export default products;
+const enrichedProducts = products.map((product) => {
+  const key = product.image[0];
+  const content = productContent[key];
+  if (!content) return product;
+  return { ...product, ...content };
+});
+
+export default enrichedProducts;

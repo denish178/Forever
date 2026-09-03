@@ -73,6 +73,28 @@ const Product = () => {
           <p className="mt-5 text-gray-500 md:w-4/5">
             {productData.description}
           </p>
+          {(productData.material || productData.fit || productData.care) && (
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {productData.material && (
+                <p>
+                  <span className="text-gray-400">Material: </span>
+                  {productData.material}
+                </p>
+              )}
+              {productData.fit && (
+                <p>
+                  <span className="text-gray-400">Fit: </span>
+                  {productData.fit}
+                </p>
+              )}
+              {productData.care && (
+                <p className="sm:col-span-2">
+                  <span className="text-gray-400">Care: </span>
+                  {productData.care}
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex flex-col gap-4 my-8">
             <p>Select Size</p>
             <div className="flex gap-2">
@@ -105,15 +127,31 @@ const Product = () => {
           </div>
           <hr className="mt-8 sm:w-4/5" />
           <div className="text-sm text-gray-500 mt-5 flex flex-col gap-1">
-            <p>100% Original product.</p>
-            <p>Cash on delivery is available on this product.</p>
-            <p>Easy return and exchange policy within 7 days.</p>
+            {productData.highlights?.length > 0 ? (
+              productData.highlights.map((item, index) => (
+                <p key={index}>{item}</p>
+              ))
+            ) : (
+              <>
+                <p>100% Original product.</p>
+                <p>Cash on delivery is available on this product.</p>
+                <p>Easy return and exchange policy within 7 days.</p>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       <ProductReviews
         productId={productData._id}
+        productDetails={{
+          description: productData.description,
+          material: productData.material,
+          fit: productData.fit,
+          care: productData.care,
+          highlights: productData.highlights,
+          sizes: productData.sizes,
+        }}
         onReviewSummaryChange={setReviewSummary}
       />
 
