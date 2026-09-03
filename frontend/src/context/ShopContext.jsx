@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 export const ShopContext = createContext();
@@ -16,6 +16,7 @@ const ShopContextProvider = (props) => {
   const [products, setProducts] = useState([]);
   const [token, setToken] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   const addToCart = async (itemId, size) => {
     if (!size) {
@@ -133,6 +134,17 @@ const ShopContextProvider = (props) => {
 
   useEffect(() => {
     getProductsData();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const refreshProducts = () => {
+      if (document.visibilityState === "visible") {
+        getProductsData();
+      }
+    };
+
+    document.addEventListener("visibilitychange", refreshProducts);
+    return () => document.removeEventListener("visibilitychange", refreshProducts);
   }, []);
 
   useEffect(() => {
