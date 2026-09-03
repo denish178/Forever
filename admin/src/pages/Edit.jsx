@@ -26,28 +26,90 @@ const Edit = ({ token }) => {
   const [image3, setImage3] = useState(false);
   const [image4, setImage4] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const MAX_IMAGES = 4;
+  const newImages = [image1, image2, image3, image4].filter(Boolean);
+  const totalImages = existingImages.length + newImages.length;
+  const remainingSlots = MAX_IMAGES - existingImages.length;
 
   const removeExistingImage = (imageToRemove) => {
     setExistingImages((prev) => prev.filter((img) => img !== imageToRemove));
   };
 
+  const newImageSlots = [
+    { image: image1, setImage: setImage1 },
+    { image: image2, setImage: setImage2 },
+    { image: image3, setImage: setImage3 },
+    { image: image4, setImage: setImage4 },
+  ].slice(0, remainingSlots);
+
+  const validateForm = () => {
+    if (!name.trim()) {
+      toast.error("Product name is required");
+      return false;
+    }
+
+    if (!description.trim()) {
+      toast.error("Description is required");
+      return false;
+    }
+
+    if (!price || Number(price) <= 0) {
+      toast.error("Please enter a valid price");
+      return false;
+    }
+
+    if (sizes.length === 0) {
+      toast.error("Please select at least one size");
+      return false;
+    }
+
+    return true;
+  };
+
   // Fetch single product
   const fetchProduct = async () => {
     try {
+      setLoading(true);
+      setLoadError("");
+
       const response = await axios.post(backendUrl + "/api/product/single", {
         productId: id,
       });
 
-      if (response.data.success) {
+      if (response.data.success && response.data.product) {
         setProduct(response.data.product);
+      } else {
+        setProduct(null);
+        setLoadError(response.data.message || "Product not found");
+        toast.error(response.data.message || "Product not found");
       }
     } catch (error) {
       console.log(error);
+      setProduct(null);
+      setLoadError(error.message);
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Update product
   const updateProduct = async () => {
+    if (!validateForm()) return;
+
+    if (totalImages > MAX_IMAGES) {
+      toast.error(`Maximum ${MAX_IMAGES} images allowed per product`);
+      return;
+    }
+
+    if (totalImages === 0) {
+      toast.error("Please keep at least one product image");
+      return;
+    }
+
     try {
       setSubmitting(true);
 
@@ -98,6 +160,7 @@ const Edit = ({ token }) => {
 
   // Fetch product when page loads
   useEffect(() => {
+    setProduct(null);
     fetchProduct();
   }, [id]);
 
@@ -117,9 +180,46 @@ const Edit = ({ token }) => {
 
   return (
     <div className="w-full">
-      <h2 className="text-2xl font-semibold mb-6">Edit Product</h2>
+      <div className="flex items-center justify-between mb-6 max-w-4xl">
+        <h2 className="text-2xl font-semibold">Edit Product</h2>
+        <button
+          type="button"
+          onClick={() => navigate("/list")}
+          className="text-sm text-gray-600 hover:text-black underline"
+        >
+          Back to List
+        </button>
+      </div>
 
-      {product && (
+      {loading && (
+        <div className="bg-white border border-gray-200 p-8 rounded-lg max-w-4xl text-center text-gray-500">
+          Loading product...
+        </div>
+      )}
+
+      {!loading && loadError && (
+        <div className="bg-white border border-red-200 p-8 rounded-lg max-w-4xl text-center">
+          <p className="text-red-500 mb-4">{loadError}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={fetchProduct}
+              className="bg-black text-white px-5 py-2 rounded text-sm"
+            >
+              Try Again
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/list")}
+              className="border border-gray-300 text-gray-700 px-5 py-2 rounded text-sm"
+            >
+              Back to List
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!loading && product && (
         <div className="bg-white border border-gray-200 p-6 rounded-lg max-w-4xl">
           {/* Product Name */}
           <div className="mb-5">
@@ -236,155 +336,136 @@ const Edit = ({ token }) => {
 
           {/* Existing Product Images */}
           <div className="mb-7">
-            <p className="mb-3 font-medium text-gray-700">
-              Existing Product Images
-            </p>
-
-            <div className="flex gap-3 flex-wrap">
-              {existingImages.map((image, index) => (
-                <div
-                  key={index}
-                  className="relative w-24 h-24 border border-gray-300 rounded overflow-hidden bg-gray-50"
-                >
-                  <img
-                    src={image.startsWith("http") ? image : imageMap[image]}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => removeExistingImage(image)}
-                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center hover:bg-red-600"
-                    title="Remove image"
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-medium text-gray-700">Existing Product Images</p>
+              <span
+                className={`text-sm ${
+                  totalImages > MAX_IMAGES ? "text-red-500" : "text-gray-500"
+                }`}
+              >
+                {totalImages}/{MAX_IMAGES} images
+              </span>
             </div>
+
+            {existingImages.length === 0 ? (
+              <p className="text-sm text-gray-400 border border-dashed border-gray-300 rounded-lg p-4 text-center">
+                No existing images. Add new images below.
+              </p>
+            ) : (
+              <div className="flex gap-3 flex-wrap">
+                {existingImages.map((image, index) => (
+                  <div
+                    key={index}
+                    className="relative w-28 h-28 border border-gray-200 rounded-lg overflow-hidden bg-gray-50 shadow-sm"
+                  >
+                    <img
+                      src={image.startsWith("http") ? image : imageMap[image]}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+
+                    <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                      Saved
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(image)}
+                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center hover:bg-red-600"
+                      title="Remove image"
+                    >
+                      X
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* New Product Images */}
           <div className="mb-8">
-            <p className="mb-3 font-medium text-gray-700">Add New Images</p>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {/* Image 1 */}
-              <div>
-                <label className="block">
-                  <div className="w-full aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 hover:border-gray-500">
-                    {image1 ? (
-                      <img
-                        src={URL.createObjectURL(image1)}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm text-gray-400 text-center px-2">
-                        Select Image 1
-                      </span>
-                    )}
-                  </div>
-
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImage1(e.target.files[0])}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Image 2 */}
-              <div>
-                <label className="block">
-                  <div className="w-full aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 hover:border-gray-500">
-                    {image2 ? (
-                      <img
-                        src={URL.createObjectURL(image2)}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm text-gray-400 text-center px-2">
-                        Select Image 2
-                      </span>
-                    )}
-                  </div>
-
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImage2(e.target.files[0])}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Image 3 */}
-              <div>
-                <label className="block">
-                  <div className="w-full aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 hover:border-gray-500">
-                    {image3 ? (
-                      <img
-                        src={URL.createObjectURL(image3)}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm text-gray-400 text-center px-2">
-                        Select Image 3
-                      </span>
-                    )}
-                  </div>
-
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImage3(e.target.files[0])}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Image 4 */}
-              <div>
-                <label className="block">
-                  <div className="w-full aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 hover:border-gray-500">
-                    {image4 ? (
-                      <img
-                        src={URL.createObjectURL(image4)}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm text-gray-400 text-center px-2">
-                        Select Image 4
-                      </span>
-                    )}
-                  </div>
-
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImage4(e.target.files[0])}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-medium text-gray-700">Add New Images</p>
+              <span className="text-sm text-gray-500">
+                {remainingSlots > 0
+                  ? `${remainingSlots} slot${remainingSlots > 1 ? "s" : ""} left`
+                  : "No slots left"}
+              </span>
             </div>
+
+            {remainingSlots === 0 ? (
+              <p className="text-sm text-amber-600 border border-amber-200 bg-amber-50 rounded-lg p-4">
+                Maximum image limit reached. Remove an existing image to add a new one.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {newImageSlots.map((slot, index) => (
+                  <div key={index} className="relative">
+                    <label className="block">
+                      <div className="w-full aspect-square border-2 border-dashed border-blue-200 rounded-lg flex items-center justify-center cursor-pointer overflow-hidden bg-blue-50/40 hover:border-blue-400">
+                        {slot.image ? (
+                          <img
+                            src={URL.createObjectURL(slot.image)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm text-gray-400 text-center px-2">
+                            Select Image {index + 1}
+                          </span>
+                        )}
+                      </div>
+
+                      {slot.image && (
+                        <span className="absolute bottom-2 left-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">
+                          New
+                        </span>
+                      )}
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => slot.setImage(e.target.files[0])}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {slot.image && (
+                      <button
+                        type="button"
+                        onClick={() => slot.setImage(false)}
+                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center hover:bg-red-600"
+                        title="Remove selected image"
+                      >
+                        X
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Update Button */}
-          <button
-            type="button"
-            onClick={updateProduct}
-            disabled={submitting}
-            className="bg-black text-white px-8 py-3 rounded text-sm font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "UPDATING..." : "UPDATE PRODUCT"}
-          </button>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              type="button"
+              onClick={updateProduct}
+              disabled={submitting}
+              className="bg-black text-white px-8 py-3 rounded text-sm font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "UPDATING..." : "UPDATE PRODUCT"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/list")}
+              disabled={submitting}
+              className="border border-gray-300 text-gray-700 px-8 py-3 rounded text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              CANCEL
+            </button>
+          </div>
         </div>
       )}
     </div>
