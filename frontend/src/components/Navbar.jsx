@@ -85,6 +85,15 @@ const Navbar = () => {
                     <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border' to='/contact'>CONTACT</NavLink>
                     <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border' to='/wishlist'>WISHLIST</NavLink>
                     <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border' to='/cart'>CART</NavLink>
+                    {token ? (
+                        <>
+                            <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border' to='/profile'>MY PROFILE</NavLink>
+                            <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border' to='/orders'>ORDERS</NavLink>
+                            <button onClick={() => { setVisible(false); logout(); }} className='py-2 pl-6 border text-left w-full'>LOGOUT</button>
+                        </>
+                    ) : (
+                        <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border' to='/login'>LOGIN</NavLink>
+                    )}
                 </div>
         </div>
 

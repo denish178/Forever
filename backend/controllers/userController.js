@@ -2,6 +2,7 @@ import validator from "validator";
 import bcrypt from "bcrypt"
 import jwt from 'jsonwebtoken'
 import userModel from "../models/userModel.js";
+import { sendError, sendSuccess } from "../utils/apiResponse.js";
 
 
 const createToken = (id) => {
@@ -17,7 +18,7 @@ const loginUser = async (req, res) => {
         const user = await userModel.findOne({ email });
 
         if (!user) {
-            return res.json({ success: false, message: "User doesn't exists" })
+            return sendError(res, "User doesn't exists", 404)
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
@@ -25,16 +26,16 @@ const loginUser = async (req, res) => {
         if (isMatch) {
 
             const token = createToken(user._id)
-            res.json({ success: true, token })
+            return sendSuccess(res, { token })
 
         }
         else {
-            res.json({ success: false, message: 'Invalid credentials' })
+            return sendError(res, 'Invalid credentials', 401)
         }
 
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message })
+        return sendError(res, error.message, 500)
     }
 }
 
@@ -47,15 +48,15 @@ const registerUser = async (req, res) => {
         // checking user already exists or not
         const exists = await userModel.findOne({ email });
         if (exists) {
-            return res.json({ success: false, message: "User already exists" })
+            return sendError(res, "User already exists", 400)
         }
 
         // validating email format & strong password
         if (!validator.isEmail(email)) {
-            return res.json({ success: false, message: "Please enter a valid email" })
+            return sendError(res, "Please enter a valid email", 400)
         }
         if (password.length < 8) {
-            return res.json({ success: false, message: "Please enter a strong password" })
+            return sendError(res, "Please enter a strong password", 400)
         }
 
         // hashing user password
@@ -72,11 +73,11 @@ const registerUser = async (req, res) => {
 
         const token = createToken(user._id)
 
-        res.json({ success: true, token })
+        return sendSuccess(res, { token }, 201)
 
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message })
+        return sendError(res, error.message, 500)
     }
 }
 
@@ -88,14 +89,14 @@ const adminLogin = async (req, res) => {
 
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
             const token = jwt.sign(email+password,process.env.JWT_SECRET);
-            res.json({success:true,token})
+            return sendSuccess(res, { token })
         } else {
-            res.json({success:false,message:"Invalid credentials"})
+            return sendError(res, "Invalid credentials", 401)
         }
 
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message })
+        return sendError(res, error.message, 500)
     }
 }
 
@@ -105,13 +106,13 @@ const getUserProfile = async (req, res) => {
         const user = await userModel.findById(req.body.userId).select("-password");
 
         if (!user) {
-            return res.json({ success: false, message: "User not found" });
+            return sendError(res, "User not found", 404);
         }
 
-        res.json({ success: true, user });
+        return sendSuccess(res, { user });
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message });
+        return sendError(res, error.message, 500);
     }
 }
 

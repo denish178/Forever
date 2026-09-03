@@ -2,6 +2,7 @@ import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import Stripe from "stripe";
 import Razorpay from "razorpay";
+import { sendError, sendSuccess } from "../utils/apiResponse.js";
 
 // ================== CONFIG ==================
 const currency = "inr";
@@ -51,19 +52,16 @@ const placeOrder = async (req, res) => {
 
     await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
-    res.json({ success: true, message: "Order Placed (COD)" });
+    return sendSuccess(res, { message: "Order Placed (COD)" }, 201);
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
 // ================== STRIPE ORDER ==================
 const placeOrderStripe = async (req, res) => {
   if (!stripe) {
-    return res.status(503).json({
-      success: false,
-      message: "Stripe payments are disabled",
-    });
+    return sendError(res, "Stripe payments are disabled", 503);
   }
 
   try {
@@ -107,9 +105,9 @@ const placeOrderStripe = async (req, res) => {
       mode: "payment",
     });
 
-    res.json({ success: true, session_url: session.url });
+    return sendSuccess(res, { session_url: session.url });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -121,23 +119,20 @@ const verifyStripe = async (req, res) => {
     if (success === "true") {
       await orderModel.findByIdAndUpdate(orderId, { payment: true });
       await userModel.findByIdAndUpdate(userId, { cartData: {} });
-      res.json({ success: true });
+      return sendSuccess(res, {});
     } else {
       await orderModel.findByIdAndDelete(orderId);
-      res.json({ success: false });
+      return sendError(res, "Payment cancelled", 400);
     }
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
 // ================== RAZORPAY ORDER ==================
 const placeOrderRazorpay = async (req, res) => {
   if (!razorpayInstance) {
-    return res.status(503).json({
-      success: false,
-      message: "Razorpay payments are disabled",
-    });
+    return sendError(res, "Razorpay payments are disabled", 503);
   }
 
   try {
@@ -162,19 +157,16 @@ const placeOrderRazorpay = async (req, res) => {
     };
 
     const order = await razorpayInstance.orders.create(options);
-    res.json({ success: true, order });
+    return sendSuccess(res, { order });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
 // ================== VERIFY RAZORPAY ==================
 const verifyRazorpay = async (req, res) => {
   if (!razorpayInstance) {
-    return res.status(503).json({
-      success: false,
-      message: "Razorpay payments are disabled",
-    });
+    return sendError(res, "Razorpay payments are disabled", 503);
   }
 
   try {
@@ -187,12 +179,12 @@ const verifyRazorpay = async (req, res) => {
         payment: true,
       });
       await userModel.findByIdAndUpdate(userId, { cartData: {} });
-      res.json({ success: true, message: "Payment Successful" });
+      return sendSuccess(res, { message: "Payment Successful" });
     } else {
-      res.json({ success: false, message: "Payment Failed" });
+      return sendError(res, "Payment Failed", 400);
     }
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -200,9 +192,9 @@ const verifyRazorpay = async (req, res) => {
 const allOrders = async (req, res) => {
   try {
     const orders = await orderModel.find({});
-    res.json({ success: true, orders });
+    return sendSuccess(res, { orders });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -210,9 +202,9 @@ const userOrders = async (req, res) => {
   try {
     const { userId } = req.body;
     const orders = await orderModel.find({ userId });
-    res.json({ success: true, orders });
+    return sendSuccess(res, { orders });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -220,9 +212,9 @@ const updateStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
     await orderModel.findByIdAndUpdate(orderId, { status });
-    res.json({ success: true, message: "Status Updated" });
+    return sendSuccess(res, { message: "Status Updated" });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 

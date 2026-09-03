@@ -2,6 +2,7 @@ import reviewModel from "../models/reviewModel.js";
 import productModel from "../models/productModel.js";
 import userModel from "../models/userModel.js";
 import orderModel from "../models/orderModel.js";
+import { sendError, sendSuccess } from "../utils/apiResponse.js";
 
 const userHasPurchasedProduct = async (userId, productId) => {
   const orders = await orderModel.find({ userId });
@@ -27,29 +28,26 @@ const addReview = async (req, res) => {
 
     const product = await productModel.findById(productId);
     if (!product) {
-      return res.json({ success: false, message: "Product not found" });
+      return sendError(res, "Product not found", 404);
     }
 
     const user = await userModel.findById(userId);
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return sendError(res, "User not found", 404);
     }
 
     const hasPurchased = await userHasPurchasedProduct(userId, productId);
     if (!hasPurchased) {
-      return res.json({
-        success: false,
-        message: "You can only review products you have purchased",
-      });
+      return sendError(res, "You can only review products you have purchased", 403);
     }
 
     const reviewRating = Number(rating);
     if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
-      return res.json({ success: false, message: "Rating must be between 1 and 5" });
+      return sendError(res, "Rating must be between 1 and 5", 400);
     }
 
     if (!comment || !comment.trim()) {
-      return res.json({ success: false, message: "Review comment is required" });
+      return sendError(res, "Review comment is required", 400);
     }
 
     const existingReview = await reviewModel.findOne({ productId, userId });
@@ -62,7 +60,7 @@ const addReview = async (req, res) => {
         date: Date.now(),
       });
 
-      return res.json({ success: true, message: "Review updated" });
+      return sendSuccess(res, { message: "Review updated" });
     }
 
     const review = new reviewModel({
@@ -76,10 +74,10 @@ const addReview = async (req, res) => {
 
     await review.save();
 
-    res.json({ success: true, message: "Review added" });
+    return sendSuccess(res, { message: "Review added" }, 201);
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -94,15 +92,14 @@ const getProductReviews = async (req, res) => {
         ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
         : 0;
 
-    res.json({
-      success: true,
+    return sendSuccess(res, {
       reviews,
       reviewCount,
       averageRating: Number(averageRating.toFixed(1)),
     });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -113,14 +110,13 @@ const checkReviewEligibility = async (req, res) => {
     const canReview = await userHasPurchasedProduct(userId, productId);
     const existingReview = await reviewModel.findOne({ productId, userId });
 
-    res.json({
-      success: true,
+    return sendSuccess(res, {
       canReview,
       hasReview: Boolean(existingReview),
     });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -131,23 +127,20 @@ const updateReview = async (req, res) => {
     const review = await reviewModel.findById(reviewId);
 
     if (!review) {
-      return res.json({ success: false, message: "Review not found" });
+      return sendError(res, "Review not found", 404);
     }
 
     if (String(review.userId) !== String(userId)) {
-      return res.json({
-        success: false,
-        message: "You can only edit your own review",
-      });
+      return sendError(res, "You can only edit your own review", 403);
     }
 
     const reviewRating = Number(rating);
     if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
-      return res.json({ success: false, message: "Rating must be between 1 and 5" });
+      return sendError(res, "Rating must be between 1 and 5", 400);
     }
 
     if (!comment || !comment.trim()) {
-      return res.json({ success: false, message: "Review comment is required" });
+      return sendError(res, "Review comment is required", 400);
     }
 
     await reviewModel.findByIdAndUpdate(reviewId, {
@@ -156,10 +149,10 @@ const updateReview = async (req, res) => {
       date: Date.now(),
     });
 
-    res.json({ success: true, message: "Review updated" });
+    return sendSuccess(res, { message: "Review updated" });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -170,22 +163,19 @@ const deleteReview = async (req, res) => {
     const review = await reviewModel.findById(reviewId);
 
     if (!review) {
-      return res.json({ success: false, message: "Review not found" });
+      return sendError(res, "Review not found", 404);
     }
 
     if (String(review.userId) !== String(userId)) {
-      return res.json({
-        success: false,
-        message: "You can only delete your own review",
-      });
+      return sendError(res, "You can only delete your own review", 403);
     }
 
     await reviewModel.findByIdAndDelete(reviewId);
 
-    res.json({ success: true, message: "Review deleted" });
+    return sendSuccess(res, { message: "Review deleted" });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
