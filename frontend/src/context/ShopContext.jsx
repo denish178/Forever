@@ -117,6 +117,13 @@ const ShopContextProvider = (props) => {
     }
   };
 
+  const clearSession = () => {
+    localStorage.removeItem("token");
+    setToken("");
+    setCartItems({});
+    setWishlistItems({});
+  };
+
   const getUserCart = async (token) => {
     try {
       const response = await axios.post(
@@ -129,7 +136,11 @@ const ShopContextProvider = (props) => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.message);
+      if (error.response?.status === 401 || error.response?.status === 404) {
+        clearSession();
+        return;
+      }
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -145,7 +156,11 @@ const ShopContextProvider = (props) => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.message);
+      if (error.response?.status === 401 || error.response?.status === 404) {
+        clearSession();
+        return;
+      }
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -223,11 +238,13 @@ const ShopContextProvider = (props) => {
   }, []);
 
   useEffect(() => {
-    if (!token && localStorage.getItem("token")) {
-      setToken(localStorage.getItem("token"));
-      getUserCart(localStorage.getItem("token"));
-      getUserWishlist(localStorage.getItem("token"));
+    const savedToken = localStorage.getItem("token");
+
+    if (!token && savedToken) {
+      setToken(savedToken);
+      return;
     }
+
     if (token) {
       getUserCart(token);
       getUserWishlist(token);
