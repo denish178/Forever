@@ -208,9 +208,32 @@ const userOrders = async (req, res) => {
   }
 };
 
+const VALID_ORDER_STATUSES = [
+  "Order Placed",
+  "Packing",
+  "Shipped",
+  "Out for delivery",
+  "Delivered",
+];
+
 const updateStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
+
+    if (!orderId || !status) {
+      return sendError(res, "Order ID and status are required", 400);
+    }
+
+    if (!VALID_ORDER_STATUSES.includes(status)) {
+      return sendError(res, "Invalid order status", 400);
+    }
+
+    const order = await orderModel.findById(orderId);
+
+    if (!order) {
+      return sendError(res, "Order not found", 404);
+    }
+
     await orderModel.findByIdAndUpdate(orderId, { status });
     return sendSuccess(res, { message: "Status Updated" });
   } catch (error) {
