@@ -2,16 +2,29 @@ import React, { useContext } from "react";
 import { ShopContext } from "../context/ShopContext";
 import { Link } from "react-router-dom";
 import { imageMap } from "../assets/imageMap";
+import WishlistButton from "./WishlistButton";
 
 const ProductItem = ({ id, image, name, price }) => {
-  const { currency } = useContext(ShopContext);
+  const { currency, isInWishlist, toggleWishlist } = useContext(ShopContext);
 
   return (
-    <Link
-      onClick={() => scrollTo(0, 0)}
-      className="text-gray-700 cursor-pointer"
-      to={`/product/${id}`}
-    >
+    <div className="relative text-gray-700">
+      <div className="absolute top-2 right-2 z-10">
+        <WishlistButton
+          active={isInWishlist(id)}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleWishlist(id);
+          }}
+        />
+      </div>
+
+      <Link
+        onClick={() => scrollTo(0, 0)}
+        className="cursor-pointer block"
+        to={`/product/${id}`}
+      >
       <div className=" overflow-hidden">
         <img
           className="hover:scale-110 transition ease-in-out"
@@ -24,7 +37,8 @@ const ProductItem = ({ id, image, name, price }) => {
         {currency}
         {price}
       </p>
-    </Link>
+      </Link>
+    </div>
   );
 };
 
