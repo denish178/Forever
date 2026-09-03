@@ -1,4 +1,5 @@
 import userModel from "../models/userModel.js";
+import productModel from "../models/productModel.js";
 import { sendError, sendSuccess } from "../utils/apiResponse.js";
 
 const addToWishlist = async (req, res) => {
@@ -54,7 +55,33 @@ const getUserWishlist = async (req, res) => {
       return sendError(res, "User not found", 404);
     }
 
-    return sendSuccess(res, { wishlistData: userData.wishlistData || {} });
+    const rawWishlist = userData.wishlistData || {};
+    const wishlistIds = Object.keys(rawWishlist).filter((id) => rawWishlist[id]);
+
+    if (wishlistIds.length === 0) {
+      return sendSuccess(res, { wishlistData: {} });
+    }
+
+    const existingProducts = await productModel
+      .find({ _id: { $in: wishlistIds } })
+      .select("_id");
+
+    const validIds = new Set(
+      existingProducts.map((product) => product._id.toString()),
+    );
+
+    const wishlistData = {};
+    for (const id of wishlistIds) {
+      if (validIds.has(id)) {
+        wishlistData[id] = true;
+      }
+    }
+
+    if (Object.keys(wishlistData).length !== wishlistIds.length) {
+      await userModel.findByIdAndUpdate(userId, { wishlistData });
+    }
+
+    return sendSuccess(res, { wishlistData });
   } catch (error) {
     console.log(error);
     return sendError(res, error.message, 500);
