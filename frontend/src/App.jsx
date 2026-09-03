@@ -17,6 +17,7 @@ import SearchBar from './components/SearchBar'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Verify from './pages/Verify'
+import ProtectedRoute from './components/ProtectedRoute'
 
 const App = () => {
   return (
@@ -32,10 +33,10 @@ const App = () => {
         <Route path='/product/:productId' element={<Product />} />
         <Route path='/cart' element={<Cart />} />
         <Route path='/login' element={<Login />} />
-        <Route path='/place-order' element={<PlaceOrder />} />
-        <Route path='/orders' element={<Orders />} />
-        <Route path='/profile' element={<Profile />} />
-        <Route path='/wishlist' element={<Wishlist />} />
+        <Route path='/place-order' element={<ProtectedRoute><PlaceOrder /></ProtectedRoute>} />
+        <Route path='/orders' element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+        <Route path='/profile' element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path='/wishlist' element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
         <Route path='/verify' element={<Verify />} />
       </Routes>
       <Footer />

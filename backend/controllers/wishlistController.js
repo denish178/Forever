@@ -1,4 +1,5 @@
 import userModel from "../models/userModel.js";
+import { sendError, sendSuccess } from "../utils/apiResponse.js";
 
 const addToWishlist = async (req, res) => {
   try {
@@ -9,10 +10,10 @@ const addToWishlist = async (req, res) => {
 
     await userModel.findByIdAndUpdate(userId, { wishlistData });
 
-    res.json({ success: true, message: "Added To Wishlist" });
+    return sendSuccess(res, { message: "Added To Wishlist" });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -26,10 +27,10 @@ const removeFromWishlist = async (req, res) => {
 
     await userModel.findByIdAndUpdate(userId, { wishlistData });
 
-    res.json({ success: true, message: "Removed From Wishlist" });
+    return sendSuccess(res, { message: "Removed From Wishlist" });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -39,10 +40,10 @@ const getUserWishlist = async (req, res) => {
 
     const userData = await userModel.findById(userId);
 
-    res.json({ success: true, wishlistData: userData.wishlistData || {} });
+    return sendSuccess(res, { wishlistData: userData.wishlistData || {} });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 

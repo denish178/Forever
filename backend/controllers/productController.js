@@ -24,6 +24,8 @@ const getCloudinaryPublicId = (url) => {
   }
 };
 
+import { sendError, sendSuccess } from "../utils/apiResponse.js";
+
 // function for add product
 const addProduct = async (req, res) => {
   try {
@@ -72,10 +74,10 @@ const addProduct = async (req, res) => {
     const product = new productModel(productData);
     await product.save();
 
-    res.json({ success: true, message: "Product Added" });
+    return sendSuccess(res, { message: "Product Added" }, 201);
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -83,10 +85,10 @@ const addProduct = async (req, res) => {
 const listProducts = async (req, res) => {
   try {
     const products = await productModel.find({});
-    res.json({ success: true, products });
+    return sendSuccess(res, { products });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -98,7 +100,7 @@ const removeProduct = async (req, res) => {
     const product = await productModel.findById(id);
 
     if (!product) {
-      return res.json({ success: false, message: "Product not found" });
+      return sendError(res, "Product not found", 404);
     }
 
     for (const image of product.image) {
@@ -116,10 +118,10 @@ const removeProduct = async (req, res) => {
 
     await productModel.findByIdAndDelete(id);
 
-    res.json({ success: true, message: "Product Removed" });
+    return sendSuccess(res, { message: "Product Removed" });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -141,7 +143,7 @@ const updateProduct = async (req, res) => {
     const product = await productModel.findById(id);
 
     if (!product) {
-      return res.json({ success: false, message: "Product not found" });
+      return sendError(res, "Product not found", 404);
     }
 
     const image1 = req.files.image1 && req.files.image1[0];
@@ -200,10 +202,10 @@ const updateProduct = async (req, res) => {
 
     await productModel.findByIdAndUpdate(id, productData);
 
-    res.json({ success: true, message: "Product Updated" });
+    return sendSuccess(res, { message: "Product Updated" });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 
@@ -212,10 +214,15 @@ const singleProduct = async (req, res) => {
   try {
     const { productId } = req.body;
     const product = await productModel.findById(productId);
-    res.json({ success: true, product });
+
+    if (!product) {
+      return sendError(res, "Product not found", 404);
+    }
+
+    return sendSuccess(res, { product });
   } catch (error) {
     console.log(error);
-    res.json({ success: false, message: error.message });
+    return sendError(res, error.message, 500);
   }
 };
 

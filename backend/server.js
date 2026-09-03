@@ -9,6 +9,7 @@ import cartRouter from "./routes/cartRoute.js";
 import wishlistRouter from "./routes/wishlistRoute.js";
 import reviewRouter from "./routes/reviewRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 
 // Load env FIRST
 dotenv.config();
@@ -36,6 +37,9 @@ app.use("/api/order", orderRouter);
 app.get("/", (req, res) => {
   res.send("API Working");
 });
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 if (!process.env.VERCEL) {
   app.listen(port, () => console.log("Server started on PORT : " + port));

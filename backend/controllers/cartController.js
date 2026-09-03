@@ -1,4 +1,5 @@
 import userModel from "../models/userModel.js"
+import { sendError, sendSuccess } from "../utils/apiResponse.js";
 
 
 // add products to user cart
@@ -24,11 +25,11 @@ const addToCart = async (req,res) => {
 
         await userModel.findByIdAndUpdate(userId, {cartData})
 
-        res.json({ success: true, message: "Added To Cart" })
+        return sendSuccess(res, { message: "Added To Cart" })
 
     } catch (error) {
         console.log(error)
-        res.json({ success: false, message: error.message })
+        return sendError(res, error.message, 500)
     }
 }
 
@@ -44,11 +45,11 @@ const updateCart = async (req,res) => {
         cartData[itemId][size] = quantity
 
         await userModel.findByIdAndUpdate(userId, {cartData})
-        res.json({ success: true, message: "Cart Updated" })
+        return sendSuccess(res, { message: "Cart Updated" })
 
     } catch (error) {
         console.log(error)
-        res.json({ success: false, message: error.message })
+        return sendError(res, error.message, 500)
     }
 }
 
@@ -63,11 +64,11 @@ const getUserCart = async (req,res) => {
         const userData = await userModel.findById(userId)
         let cartData = await userData.cartData;
 
-        res.json({ success: true, cartData })
+        return sendSuccess(res, { cartData })
 
     } catch (error) {
         console.log(error)
-        res.json({ success: false, message: error.message })
+        return sendError(res, error.message, 500)
     }
 
 }
