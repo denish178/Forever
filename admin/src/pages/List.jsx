@@ -3,8 +3,12 @@ import React, { useEffect, useState } from "react";
 import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
 import { imageMap } from "../assets/imageMap";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const List = ({ token }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [list, setList] = useState([]);
 
   const fetchList = async () => {
@@ -43,7 +47,7 @@ const List = ({ token }) => {
 
   useEffect(() => {
     fetchList();
-  }, []);
+  }, [location.key]);
 
   return (
     <>
@@ -81,6 +85,12 @@ const List = ({ token }) => {
               {currency}
               {item.price}
             </p>
+            <button
+              onClick={() => navigate(`/edit/${item._id}`)}
+              className="text-right md:text-center cursor-pointer"
+            >
+              Edit
+            </button>
             <p
               onClick={() => removeProduct(item._id)}
               className="text-right md:text-center cursor-pointer text-lg"
