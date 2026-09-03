@@ -5,7 +5,9 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     cartData: { type: Object, default: {} },
-    wishlistData: { type: Object, default: {} }
+    wishlistData: { type: Object, default: {} },
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Number },
 }, { minimize: false })
 
 const userModel = mongoose.models.user || mongoose.model('user',userSchema);
