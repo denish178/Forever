@@ -59,10 +59,12 @@ npm run seed:coupons  # SAVE20 + FLAT100 coupons
 ## 2. Storefront (Vercel)
 
 **Project settings:**
-- Root Directory: `frontend`
+- Root Directory: `frontend` ← **required** (repo root deploy will fail)
 - Framework: Vite
 - Build Command: `npm run build`
 - Output Directory: `dist`
+
+**If build fails (project like `forever-x9do`):** you deployed the whole repo. Fix: **Settings → General → Root Directory → `frontend`**, then Redeploy. API stays on Render — do not build `backend/` on Vercel.
 
 **Environment variable (required):**
 
@@ -134,6 +136,7 @@ Login with `ADMIN_EMAIL` + `ADMIN_PASSWORD` from Render env vars.
 | 500 on cart/wishlist | Log in again (stale token after DB reset) |
 | Render slow first load | Normal on free tier (cold start) |
 | Admin routes 404 on refresh | Ensure `admin/vercel.json` exists and redeploy |
+| Vercel build failed (red X) | Root Directory must be `frontend`, not repo root |
 
 ---
 

@@ -3,28 +3,15 @@
   "builds": [
     {
       "src": "frontend/package.json",
-      "use": "@vercel/static-build"
-    },
-    {
-      "src": "admin/package.json",
-      "use": "@vercel/static-build"
-    },
-    {
-      "src": "backend/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
   ],
   "routes": [
     {
       "handle": "filesystem"
-    },
-    {
-      "src": "/admin(?:/.*)?",
-      "dest": "/admin/index.html"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/backend/server.js"
     },
     {
       "src": "/(.*)",
