@@ -8,9 +8,9 @@ const CATEGORIES = ["Men", "Women", "Kids"];
 const SUB_CATEGORIES = ["Topwear", "Bottomwear", "Winterwear"];
 const PRICE_RANGES = [
   { label: "All prices", value: "all" },
-  { label: "Under $50", value: "under-50" },
-  { label: "$50 – $100", value: "50-100" },
-  { label: "Above $100", value: "above-100" },
+  { label: "Under ₹200", value: "under-200" },
+  { label: "₹200 – ₹300", value: "200-300" },
+  { label: "Above ₹300", value: "above-300" },
 ];
 
 const Collection = () => {
@@ -40,12 +40,12 @@ const Collection = () => {
 
   const matchesPriceRange = (price) => {
     switch (priceRange) {
-      case "under-50":
-        return price < 50;
-      case "50-100":
-        return price >= 50 && price <= 100;
-      case "above-100":
-        return price > 100;
+      case "under-200":
+        return price < 200;
+      case "200-300":
+        return price >= 200 && price <= 300;
+      case "above-300":
+        return price > 300;
       default:
         return true;
     }

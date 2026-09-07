@@ -13,7 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 export const backendUrl =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-export const currency = "$";
+export const currency = "₹";
 
 const App = () => {
   const [token, setToken] = useState(

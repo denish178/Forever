@@ -6,6 +6,7 @@ import app from "../server.js";
 import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
 import orderModel from "../models/orderModel.js";
+import couponModel from "../models/couponModel.js";
 
 const waitForDatabase = async () => {
   if (mongoose.connection.readyState === 1) return;
@@ -51,6 +52,7 @@ describe("Forever API", () => {
     await userModel.deleteMany({});
     await productModel.deleteMany({});
     await orderModel.deleteMany({});
+    await couponModel.deleteMany({});
   });
 
   afterAll(async () => {
@@ -264,5 +266,40 @@ describe("Forever API", () => {
     expect(response.body.success).toBe(true);
     expect(response.body.stats.totalProducts).toBe(1);
     expect(response.body.stats.totalOrders).toBe(0);
+  });
+
+  test("POST /api/coupon/validate applies a valid coupon", async () => {
+    const { token } = await createUser({ email: "coupon@test.com" });
+
+    await couponModel.create({
+      code: "SAVE20",
+      discountType: "percent",
+      discountValue: 20,
+      minOrderAmount: 100,
+      maxDiscount: 500,
+      isActive: true,
+    });
+
+    const response = await request(app)
+      .post("/api/coupon/validate")
+      .set("token", token)
+      .send({ code: "SAVE20", subtotal: 500 });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.discount).toBe(100);
+    expect(response.body.code).toBe("SAVE20");
+  });
+
+  test("POST /api/coupon/validate rejects invalid coupon", async () => {
+    const { token } = await createUser({ email: "badcoupon@test.com" });
+
+    const response = await request(app)
+      .post("/api/coupon/validate")
+      .set("token", token)
+      .send({ code: "INVALID", subtotal: 500 });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
   });
 });

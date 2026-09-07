@@ -7,7 +7,8 @@
     "start": "node server.js",
     "server": "nodemon server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
-    "test:smtp": "node scripts/testSmtp.js"
+    "test:smtp": "node scripts/testSmtp.js",
+    "seed:coupons": "node seedCoupons.js"
   },
   "author": "",
   "license": "ISC",

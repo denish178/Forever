@@ -1,8 +1,19 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
+import couponModel from "../models/couponModel.js";
 import Stripe from "stripe";
 import Razorpay from "razorpay";
 import { sendError, sendSuccess } from "../utils/apiResponse.js";
+import {
+  notifyOrderPlaced,
+  notifyOrderStatusUpdated,
+} from "../utils/orderEmail.js";
+import {
+  buildOrderAmount,
+  calculateSubtotal,
+  incrementCouponUsage,
+  validateCouponForOrder,
+} from "../utils/couponService.js";
 
 // ================== CONFIG ==================
 const currency = "inr";
@@ -32,16 +43,66 @@ if (
   });
 }
 
+const resolveOrderPricing = async (items, couponCode) => {
+  const subtotal = calculateSubtotal(items);
+  const { coupon, discount } = await validateCouponForOrder(couponCode, subtotal);
+  const amount = buildOrderAmount(subtotal, discount, deliveryCharge);
+
+  return {
+    subtotal,
+    discount,
+    amount,
+    couponCode: coupon?.code || "",
+    couponId: coupon?._id || null,
+  };
+};
+
+const buildStripeLineItems = (items, discount) => {
+  const subtotal = calculateSubtotal(items);
+  const payableSubtotal = subtotal - discount;
+  const ratio = subtotal > 0 ? payableSubtotal / subtotal : 1;
+
+  const line_items = items.map((item) => ({
+    price_data: {
+      currency,
+      product_data: { name: item.name },
+      unit_amount: Math.max(1, Math.round(item.price * ratio * 100)),
+    },
+    quantity: item.quantity,
+  }));
+
+  line_items.push({
+    price_data: {
+      currency,
+      product_data: { name: "Delivery Charges" },
+      unit_amount: deliveryCharge * 100,
+    },
+    quantity: 1,
+  });
+
+  return line_items;
+};
+
+const markCouponUsedForOrder = async (order) => {
+  if (!order?.couponCode) return;
+
+  const coupon = await couponModel.findOne({ code: order.couponCode });
+  await incrementCouponUsage(coupon?._id);
+};
+
 // ================== COD ORDER ==================
 const placeOrder = async (req, res) => {
   try {
-    const { userId, items, amount, address } = req.body;
+    const { userId, items, address, couponCode } = req.body;
+    const pricing = await resolveOrderPricing(items, couponCode);
 
     const orderData = {
       userId,
       items,
       address,
-      amount,
+      amount: pricing.amount,
+      couponCode: pricing.couponCode,
+      discount: pricing.discount,
       paymentMethod: "COD",
       payment: false,
       date: Date.now(),
@@ -50,11 +111,14 @@ const placeOrder = async (req, res) => {
     const newOrder = new orderModel(orderData);
     await newOrder.save();
 
+    await incrementCouponUsage(pricing.couponId);
     await userModel.findByIdAndUpdate(userId, { cartData: {} });
+
+    notifyOrderPlaced(newOrder);
 
     return sendSuccess(res, { message: "Order Placed (COD)" }, 201);
   } catch (error) {
-    return sendError(res, error.message, 500);
+    return sendError(res, error.message, error.message.includes("coupon") ? 400 : 500);
   }
 };
 
@@ -65,14 +129,17 @@ const placeOrderStripe = async (req, res) => {
   }
 
   try {
-    const { userId, items, amount, address } = req.body;
+    const { userId, items, address, couponCode } = req.body;
     const { origin } = req.headers;
+    const pricing = await resolveOrderPricing(items, couponCode);
 
     const newOrder = new orderModel({
       userId,
       items,
       address,
-      amount,
+      amount: pricing.amount,
+      couponCode: pricing.couponCode,
+      discount: pricing.discount,
       paymentMethod: "Stripe",
       payment: false,
       date: Date.now(),
@@ -80,23 +147,7 @@ const placeOrderStripe = async (req, res) => {
 
     await newOrder.save();
 
-    const line_items = items.map((item) => ({
-      price_data: {
-        currency,
-        product_data: { name: item.name },
-        unit_amount: item.price * 100,
-      },
-      quantity: item.quantity,
-    }));
-
-    line_items.push({
-      price_data: {
-        currency,
-        product_data: { name: "Delivery Charges" },
-        unit_amount: deliveryCharge * 100,
-      },
-      quantity: 1,
-    });
+    const line_items = buildStripeLineItems(items, pricing.discount);
 
     const session = await stripe.checkout.sessions.create({
       success_url: `${origin}/verify?success=true&orderId=${newOrder._id}`,
@@ -107,7 +158,7 @@ const placeOrderStripe = async (req, res) => {
 
     return sendSuccess(res, { session_url: session.url });
   } catch (error) {
-    return sendError(res, error.message, 500);
+    return sendError(res, error.message, error.message.includes("coupon") ? 400 : 500);
   }
 };
 
@@ -117,8 +168,16 @@ const verifyStripe = async (req, res) => {
     const { orderId, success, userId } = req.body;
 
     if (success === "true") {
-      await orderModel.findByIdAndUpdate(orderId, { payment: true });
+      const order = await orderModel.findByIdAndUpdate(
+        orderId,
+        { payment: true },
+        { new: true },
+      );
       await userModel.findByIdAndUpdate(userId, { cartData: {} });
+      if (order) {
+        await markCouponUsedForOrder(order);
+        notifyOrderPlaced(order);
+      }
       return sendSuccess(res, {});
     } else {
       await orderModel.findByIdAndDelete(orderId);
@@ -136,13 +195,16 @@ const placeOrderRazorpay = async (req, res) => {
   }
 
   try {
-    const { userId, items, amount, address } = req.body;
+    const { userId, items, address, couponCode } = req.body;
+    const pricing = await resolveOrderPricing(items, couponCode);
 
     const newOrder = new orderModel({
       userId,
       items,
       address,
-      amount,
+      amount: pricing.amount,
+      couponCode: pricing.couponCode,
+      discount: pricing.discount,
       paymentMethod: "Razorpay",
       payment: false,
       date: Date.now(),
@@ -151,7 +213,7 @@ const placeOrderRazorpay = async (req, res) => {
     await newOrder.save();
 
     const options = {
-      amount: amount * 100,
+      amount: pricing.amount * 100,
       currency: currency.toUpperCase(),
       receipt: newOrder._id.toString(),
     };
@@ -159,11 +221,9 @@ const placeOrderRazorpay = async (req, res) => {
     const order = await razorpayInstance.orders.create(options);
     return sendSuccess(res, { order });
   } catch (error) {
-    return sendError(res, error.message, 500);
+    return sendError(res, error.message, error.message.includes("coupon") ? 400 : 500);
   }
 };
-
-// ================== VERIFY RAZORPAY ==================
 const verifyRazorpay = async (req, res) => {
   if (!razorpayInstance) {
     return sendError(res, "Razorpay payments are disabled", 503);
@@ -175,10 +235,16 @@ const verifyRazorpay = async (req, res) => {
     const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
 
     if (orderInfo.status === "paid") {
-      await orderModel.findByIdAndUpdate(orderInfo.receipt, {
-        payment: true,
-      });
+      const order = await orderModel.findByIdAndUpdate(
+        orderInfo.receipt,
+        { payment: true },
+        { new: true },
+      );
       await userModel.findByIdAndUpdate(userId, { cartData: {} });
+      if (order) {
+        await markCouponUsedForOrder(order);
+        notifyOrderPlaced(order);
+      }
       return sendSuccess(res, { message: "Payment Successful" });
     } else {
       return sendError(res, "Payment Failed", 400);
@@ -234,7 +300,13 @@ const updateStatus = async (req, res) => {
       return sendError(res, "Order not found", 404);
     }
 
+    if (order.status === status) {
+      return sendSuccess(res, { message: "Status Updated" });
+    }
+
     await orderModel.findByIdAndUpdate(orderId, { status });
+    notifyOrderStatusUpdated(order, status);
+
     return sendSuccess(res, { message: "Status Updated" });
   } catch (error) {
     return sendError(res, error.message, 500);

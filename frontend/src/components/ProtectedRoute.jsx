@@ -1,12 +1,14 @@
 import React, { useContext } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 
 const ProtectedRoute = ({ children }) => {
   const { token } = useContext(ShopContext);
+  const location = useLocation();
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    const redirect = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirect}`} replace />;
   }
 
   return children;

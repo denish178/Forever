@@ -10,6 +10,9 @@ const PlaceOrder = () => {
 
     const [method, setMethod] = useState('cod');
     const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, delivery_fee, products } = useContext(ShopContext);
+    const [couponInput, setCouponInput] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponLoading, setCouponLoading] = useState(false);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -21,6 +24,46 @@ const PlaceOrder = () => {
         country: '',
         phone: ''
     })
+
+    const getOrderTotal = () => {
+        const subtotal = getCartAmount();
+        const discount = appliedCoupon?.discount || 0;
+        return subtotal === 0 ? 0 : Math.max(0, subtotal - discount + delivery_fee);
+    };
+
+    const applyCoupon = async () => {
+        if (!couponInput.trim()) {
+            toast.error('Enter a coupon code');
+            return;
+        }
+
+        try {
+            setCouponLoading(true);
+
+            const response = await axios.post(
+                backendUrl + '/api/coupon/validate',
+                { code: couponInput, subtotal: getCartAmount() },
+                { headers: { token } },
+            );
+
+            if (response.data.success) {
+                setAppliedCoupon(response.data);
+                toast.success(response.data.message);
+            } else {
+                toast.error(response.data.message);
+            }
+        } catch (error) {
+            setAppliedCoupon(null);
+            toast.error(error.response?.data?.message || error.message);
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponInput('');
+    };
 
     const onChangeHandler = (event) => {
         const name = event.target.name
@@ -78,7 +121,8 @@ const PlaceOrder = () => {
             let orderData = {
                 address: formData,
                 items: orderItems,
-                amount: getCartAmount() + delivery_fee
+                amount: getOrderTotal(),
+                couponCode: appliedCoupon?.code || '',
             }
             
 
@@ -121,7 +165,7 @@ const PlaceOrder = () => {
 
         } catch (error) {
             console.log(error)
-            toast.error(error.message)
+            toast.error(error.response?.data?.message || error.message)
         }
     }
 
@@ -155,7 +199,42 @@ const PlaceOrder = () => {
             <div className='mt-8'>
 
                 <div className='mt-8 min-w-80'>
-                    <CartTotal />
+                    <CartTotal discount={appliedCoupon?.discount || 0} />
+
+                    <div className='mt-6'>
+                        <p className='text-sm font-medium text-gray-700 mb-2'>Coupon Code</p>
+                        <div className='flex gap-2'>
+                            <input
+                                value={couponInput}
+                                onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                                placeholder='e.g. SAVE20'
+                                className='flex-1 border border-gray-300 rounded py-2 px-3 text-sm outline-none focus:border-gray-500'
+                            />
+                            {appliedCoupon ? (
+                                <button
+                                    type='button'
+                                    onClick={removeCoupon}
+                                    className='border border-gray-300 px-4 py-2 text-sm'
+                                >
+                                    REMOVE
+                                </button>
+                            ) : (
+                                <button
+                                    type='button'
+                                    onClick={applyCoupon}
+                                    disabled={couponLoading}
+                                    className='bg-black text-white px-4 py-2 text-sm disabled:opacity-50'
+                                >
+                                    {couponLoading ? 'CHECKING...' : 'APPLY'}
+                                </button>
+                            )}
+                        </div>
+                        {appliedCoupon && (
+                            <p className='text-green-600 text-xs mt-2'>
+                                {appliedCoupon.code} applied — saved {appliedCoupon.discount}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 <div className='mt-12'>

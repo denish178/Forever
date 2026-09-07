@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -7,6 +8,8 @@ const Login = () => {
 
   const [currentState, setCurrentState] = useState('Login');
   const { token, setToken, navigate, backendUrl } = useContext(ShopContext)
+  const [searchParams] = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/'
 
   const [name,setName] = useState('')
   const [password,setPasword] = useState('')
@@ -46,9 +49,10 @@ const Login = () => {
 
   useEffect(()=>{
     if (token) {
-      navigate('/')
+      const safeRedirect = redirectTo.startsWith('/') ? redirectTo : '/'
+      navigate(safeRedirect)
     }
-  },[token])
+  },[token, redirectTo, navigate])
 
   return (
     <form onSubmit={onSubmitHandler} className='flex flex-col items-center w-[90%] sm:max-w-96 m-auto mt-14 gap-4 text-gray-800'>
