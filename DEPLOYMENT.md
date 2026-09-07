@@ -121,9 +121,9 @@ Login with `ADMIN_EMAIL` + `ADMIN_PASSWORD` from Render env vars.
 | Admin dashboard | Admin Vercel deploy + backend env |
 | Stripe / Razorpay | Optional keys on backend + frontend |
 
----
+**Email not sending on production?** Local `npm run test:smtp` can pass while Render still fails — copy the **same** SMTP variables into Render Environment, then **Manual Deploy**. Check spam folder for `murawaladenish@gmail.com`.
 
-## 6. Common problems
+---
 
 | Problem | Fix |
 |---------|-----|

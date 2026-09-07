@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
 
+const isProduction = () =>
+  process.env.NODE_ENV === "production" || Boolean(process.env.RENDER);
+
 const createTransporter = () => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_PASS === "your_gmail_app_password") {
     return null;
@@ -31,6 +34,11 @@ const sendMail = async ({ to, subject, html, text }) => {
   };
 
   if (!transporter) {
+    if (isProduction()) {
+      throw new Error(
+        "Email service is not configured. Set SMTP_USER and SMTP_PASS on the server.",
+      );
+    }
     console.log(`[DEV] SMTP not configured. Email skipped: ${subject} -> ${to}`);
     return;
   }
@@ -83,6 +91,11 @@ export const sendPasswordResetEmail = async (email, resetUrl) => {
   const transporter = createTransporter();
 
   if (!transporter) {
+    if (isProduction()) {
+      throw new Error(
+        "Email service is not configured. Set SMTP_USER and SMTP_PASS on the server.",
+      );
+    }
     console.log("[DEV] SMTP not configured. Password reset link:", resetUrl);
     return;
   }
