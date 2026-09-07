@@ -40,6 +40,7 @@ npm start
 | `SMTP_USER` | Gmail address |
 | `SMTP_PASS` | Gmail app password |
 | `SMTP_FROM` | `Forever <your@gmail.com>` |
+| `BREVO_API_KEY` | **Required on Render free tier** — SMTP ports are blocked; use [Brevo](https://www.brevo.com) HTTP API (300 emails/day free) |
 
 **Optional (payments):** `STRIPE_SECRET_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
 
@@ -124,7 +125,7 @@ Login with `ADMIN_EMAIL` + `ADMIN_PASSWORD` from Render env vars.
 | Admin dashboard | Admin Vercel deploy + backend env |
 | Stripe / Razorpay | Optional keys on backend + frontend |
 
-**Email not sending on production?** Local `npm run test:smtp` can pass while Render still fails — copy the **same** SMTP variables into Render Environment, set `SMTP_PORT=465` and `SMTP_SECURE=true`, then **Manual Deploy**. Check spam folder for `murawaladenish@gmail.com`.
+**Email not sending on production?** Render **free tier blocks SMTP** (ports 25/465/587). Local `npm run test:smtp` can pass while Render still fails with `Connection timeout`. Fix: use **Brevo** — verify your Gmail as sender, add `BREVO_API_KEY` on Render, keep `SMTP_FROM` / `SMTP_USER`, then **Manual Deploy**. Test locally: `npm run test:brevo`.
 
 ---
 

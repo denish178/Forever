@@ -8,6 +8,7 @@
     "server": "nodemon server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "test:smtp": "node scripts/testSmtp.js",
+    "test:brevo": "node scripts/testBrevo.js",
     "seed:coupons": "node seedCoupons.js"
   },
   "author": "",
