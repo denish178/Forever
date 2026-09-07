@@ -4,11 +4,9 @@ Forever is a MERN stack e-commerce application with a customer storefront, admin
 
 ## Live Demo
 
-Add your deployed URLs here after deployment:
-
-- **Storefront:** `https://your-frontend-url.vercel.app`
-- **Admin Panel:** `https://your-admin-url.vercel.app`
-- **Backend API:** `https://your-backend-url.onrender.com`
+- **Storefront:** https://forever-five-zeta.vercel.app
+- **Backend API:** https://forever1-t5kk.onrender.com
+- **Admin Panel:** Deploy on Vercel (`admin/` folder) — see [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ## Tech Stack
 
@@ -84,6 +82,12 @@ Never commit real `.env` files.
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_SECRET_KEY` | Cloudinary API secret |
 | `PORT` | Server port (default: `4000`) |
+| `FRONTEND_URL` | Storefront URL for emails (e.g. `https://forever-five-zeta.vercel.app`) |
+| `SMTP_HOST` | Email server (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | Email port (e.g. `587`) |
+| `SMTP_USER` | Email username |
+| `SMTP_PASS` | Email app password |
+| `SMTP_FROM` | From address (e.g. `Forever <you@gmail.com>`) |
 | `STRIPE_SECRET_KEY` | Optional Stripe payments |
 | `RAZORPAY_KEY_ID` | Optional Razorpay payments |
 | `RAZORPAY_KEY_SECRET` | Optional Razorpay secret |
@@ -162,11 +166,14 @@ node seed.js
 
 ## Deployment Notes
 
-- **Backend:** Render (or Vercel Node)
-- **Frontend / Admin:** Vercel
-- Set `VITE_BACKEND_URL` in Vercel to your deployed backend URL
-- Allow `0.0.0.0/0` in MongoDB Atlas Network Access for cloud hosting
-- URL-encode special characters in `MONGO_URI` password if needed
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full production checklist.
+
+Quick summary:
+- **Backend:** Render — set all env vars from `backend/.env.example`
+- **Storefront:** Vercel (`frontend/`) — set `VITE_BACKEND_URL` to your Render URL
+- **Admin:** Vercel (`admin/`) — same `VITE_BACKEND_URL`
+- **Seed once:** `node seed.js` and `npm run seed:coupons` against production MongoDB
+- MongoDB Atlas: allow `0.0.0.0/0` in Network Access
 
 ## Git Workflow
 
