@@ -35,7 +35,8 @@ npm start
 | `CLOUDINARY_SECRET_KEY` | Cloudinary secret |
 | `FRONTEND_URL` | `https://forever-five-zeta.vercel.app` (no trailing slash) |
 | `SMTP_HOST` | `smtp.gmail.com` |
-| `SMTP_PORT` | `587` |
+| `SMTP_PORT` | `465` on Render (use `587` locally if that works) |
+| `SMTP_SECURE` | `true` when using port `465` |
 | `SMTP_USER` | Gmail address |
 | `SMTP_PASS` | Gmail app password |
 | `SMTP_FROM` | `Forever <your@gmail.com>` |
@@ -123,7 +124,7 @@ Login with `ADMIN_EMAIL` + `ADMIN_PASSWORD` from Render env vars.
 | Admin dashboard | Admin Vercel deploy + backend env |
 | Stripe / Razorpay | Optional keys on backend + frontend |
 
-**Email not sending on production?** Local `npm run test:smtp` can pass while Render still fails — copy the **same** SMTP variables into Render Environment, then **Manual Deploy**. Check spam folder for `murawaladenish@gmail.com`.
+**Email not sending on production?** Local `npm run test:smtp` can pass while Render still fails — copy the **same** SMTP variables into Render Environment, set `SMTP_PORT=465` and `SMTP_SECURE=true`, then **Manual Deploy**. Check spam folder for `murawaladenish@gmail.com`.
 
 ---
 
