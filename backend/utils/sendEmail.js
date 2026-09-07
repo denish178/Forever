@@ -3,14 +3,36 @@ import nodemailer from "nodemailer";
 const isProduction = () =>
   process.env.NODE_ENV === "production" || Boolean(process.env.RENDER);
 
+const isEmailConfigured = () =>
+  Boolean(process.env.BREVO_API_KEY) ||
+  Boolean(
+    process.env.SMTP_USER &&
+      process.env.SMTP_PASS &&
+      process.env.SMTP_PASS !== "your_gmail_app_password",
+  );
+
+const parseSender = () => {
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || "";
+
+  const match = from.match(/^(.+?)\s*<([^>]+)>$/);
+  if (match) {
+    return { name: match[1].trim(), email: match[2].trim() };
+  }
+
+  return { name: "Forever", email: from.replace(/[<>]/g, "").trim() };
+};
+
 const createTransporter = () => {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_PASS === "your_gmail_app_password") {
+  if (
+    !process.env.SMTP_USER ||
+    !process.env.SMTP_PASS ||
+    process.env.SMTP_PASS === "your_gmail_app_password"
+  ) {
     return null;
   }
 
   const port = Number(process.env.SMTP_PORT) || 587;
-  const secure =
-    process.env.SMTP_SECURE === "true" || port === 465;
+  const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -25,9 +47,53 @@ const createTransporter = () => {
   });
 };
 
+const sendViaBrevo = async ({ to, subject, html, text }) => {
+  const sender = parseSender();
+
+  if (!sender.email) {
+    throw new Error("Set SMTP_FROM or SMTP_USER for the Brevo sender email.");
+  }
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": process.env.BREVO_API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      sender,
+      to: [{ email: to }],
+      replyTo: { email: process.env.SMTP_USER || sender.email },
+      subject,
+      htmlContent: html,
+      textContent: text || undefined,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Brevo email failed (${response.status}): ${body}`);
+  }
+};
+
 const sendMail = async ({ to, subject, html, text }) => {
+  if (!isEmailConfigured()) {
+    if (isProduction()) {
+      throw new Error(
+        "Email service is not configured. Set BREVO_API_KEY on Render (recommended) or SMTP_USER and SMTP_PASS.",
+      );
+    }
+    console.log(`[DEV] Email not configured. Skipped: ${subject} -> ${to}`);
+    return;
+  }
+
+  if (process.env.BREVO_API_KEY) {
+    await sendViaBrevo({ to, subject, html, text });
+    return;
+  }
+
   const transporter = createTransporter();
-  const mailOptions = {
+  await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to,
     replyTo: process.env.SMTP_USER,
@@ -37,19 +103,7 @@ const sendMail = async ({ to, subject, html, text }) => {
     headers: {
       "X-Entity-Ref-ID": `forever-${Date.now()}`,
     },
-  };
-
-  if (!transporter) {
-    if (isProduction()) {
-      throw new Error(
-        "Email service is not configured. Set SMTP_USER and SMTP_PASS on the server.",
-      );
-    }
-    console.log(`[DEV] SMTP not configured. Email skipped: ${subject} -> ${to}`);
-    return;
-  }
-
-  await transporter.sendMail(mailOptions);
+  });
 };
 
 const getFrontendUrl = () =>
@@ -94,21 +148,20 @@ const buildAddressHtml = (address = {}) => {
 };
 
 export const sendPasswordResetEmail = async (email, resetUrl) => {
-  const transporter = createTransporter();
-
-  if (!transporter) {
+  if (!isEmailConfigured()) {
     if (isProduction()) {
       throw new Error(
-        "Email service is not configured. Set SMTP_USER and SMTP_PASS on the server.",
+        "Email service is not configured. Set BREVO_API_KEY on Render (recommended) or SMTP_USER and SMTP_PASS.",
       );
     }
-    console.log("[DEV] SMTP not configured. Password reset link:", resetUrl);
+    console.log("[DEV] Email not configured. Password reset link:", resetUrl);
     return;
   }
 
   await sendMail({
     to: email,
     subject: "Forever - Password Reset",
+    text: `Reset your Forever password (valid 15 minutes): ${resetUrl}`,
     html: `
       <h2>Password Reset Request</h2>
       <p>You requested to reset your password. Click the button below (valid for 15 minutes):</p>
