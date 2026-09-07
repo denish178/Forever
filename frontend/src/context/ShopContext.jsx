@@ -2,14 +2,21 @@ import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import {
+  createApiClient,
+  normalizeBackendUrl,
+  requestWithRetry,
+} from "../utils/api.js";
 
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
   const currency = "₹";
   const delivery_fee = 10;
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  const backendUrl = normalizeBackendUrl(
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:4000",
+  );
+  const api = createApiClient(backendUrl);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
@@ -105,7 +112,9 @@ const ShopContextProvider = (props) => {
 
   const getProductsData = async () => {
     try {
-      const response = await axios.get(backendUrl + "/api/product/list");
+      const response = await requestWithRetry(() =>
+        api.get("/api/product/list"),
+      );
       if (response.data.success) {
         setProducts(response.data.products.reverse());
       } else {
@@ -113,7 +122,10 @@ const ShopContextProvider = (props) => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.message);
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to reach the server. Please refresh and try again.",
+      );
     }
   };
 

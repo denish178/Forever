@@ -32,7 +32,32 @@ connectCloudinary();
 
 // Middlewares
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  process.env.FRONTEND_URL,
+  process.env.ADMIN_URL,
+]
+  .filter(Boolean)
+  .map((url) => url.replace(/\/$/, ""));
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (
+        !origin ||
+        origin.startsWith("http://localhost:") ||
+        origin.endsWith(".vercel.app") ||
+        allowedOrigins.includes(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, true);
+    },
+    credentials: true,
+  }),
+);
 
 // Routes
 app.use("/api/user", userRouter);
